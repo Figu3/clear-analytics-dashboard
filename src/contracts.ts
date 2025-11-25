@@ -2,9 +2,10 @@
 
 export const CONTRACTS = {
   ClearFactory: '0x6f73CCe0210Fe9e1B8c650739C06E8a400d09E68',
-  ClearVault: '0x1CfB48224Ef579A11B98126151584EEcB0E47960', // Deployed vault instance (was implementation)
+  ClearVault: '0x1CfB48224Ef579A11B98126151584EEcB0E47960', // Deployed vault instance
   ClearVaultImplementation: '0xD842772F0a6cB1276628f2C810f41B2893B717C4', // Implementation contract
-  ClearIOU: '0x54E2F1eF78F386c7CBC5E353A4d49F353CBFca23',
+  ClearIOU: '0xb37d72c8022ac57c95b90ab3fbb21f9146fe6810', // Deployed IOU token instance (was implementation)
+  ClearIOUImplementation: '0x54E2F1eF78F386c7CBC5E353A4d49F353CBFca23', // Implementation contract
   ClearSwap: '0x5B69f9D067077c3FBb22Bd732d2c34A9731fC162',
   ClearOracle: '0x50c2584E2f32533e9307df9eE0Beb229fC20f517',
   ClearAccessManager: '0x3C2Fd22Ad486293e1F59dA6e42B28EC8DC1D63C7',
