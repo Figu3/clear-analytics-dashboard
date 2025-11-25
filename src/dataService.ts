@@ -4,6 +4,7 @@ import { CONTRACTS, RPC_URL, ABIS, START_BLOCK } from './contracts';
 export interface ProtocolMetrics {
   // Primary Metrics
   totalSwapVolume: string;
+  totalSwapVolumeUSD: string;
   totalIOUMinted: string;
   totalIOUBurned: string;
   rebalanceVolume: string;
@@ -17,8 +18,11 @@ export interface ProtocolMetrics {
   protocolFeesCollected: string;
 
   // Time series data
-  dailySwapVolume: { date: string; volume: string }[];
+  dailySwapVolume: { date: string; volume: string; volumeUSD: string }[];
   dailyIOUMinted: { date: string; amount: string }[];
+
+  // Price data
+  ethPrice: number;
 
   // Latest block processed
   lastBlock: number;
@@ -178,11 +182,24 @@ class DataService {
     }
   }
 
+  async getEthPrice(): Promise<number> {
+    try {
+      const response = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
+      );
+      const data = await response.json();
+      return data.ethereum?.usd || 0;
+    } catch (error) {
+      console.error('Error fetching ETH price:', error);
+      return 0;
+    }
+  }
+
   async getAllMetrics(): Promise<ProtocolMetrics> {
     const latestBlock = await this.getLatestBlock();
     const fromBlock = START_BLOCK;
 
-    // Fetch all events in parallel
+    // Fetch all events and ETH price in parallel
     const [
       swapEvents,
       mintEvents,
@@ -190,6 +207,7 @@ class DataService {
       vaultCount,
       depositData,
       iouSupply,
+      ethPrice,
     ] = await Promise.all([
       this.getSwapEvents(fromBlock, latestBlock),
       this.getIOUMintEvents(fromBlock, latestBlock),
@@ -197,6 +215,7 @@ class DataService {
       this.getVaultCreationEvents(fromBlock, latestBlock),
       this.getDepositEvents(fromBlock, latestBlock),
       this.getIOUTotalSupply(),
+      this.getEthPrice(),
     ]);
 
     // Calculate total swap volume
@@ -231,7 +250,14 @@ class DataService {
     }
 
     const dailySwapVolume = Array.from(dailySwapMap.entries())
-      .map(([date, volume]) => ({ date, volume: ethers.formatEther(volume) }))
+      .map(([date, volume]) => {
+        const volumeEth = ethers.formatEther(volume);
+        return {
+          date,
+          volume: volumeEth,
+          volumeUSD: (parseFloat(volumeEth) * ethPrice).toFixed(2),
+        };
+      })
       .sort((a, b) => a.date.localeCompare(b.date));
 
     // IOU token uses 6 decimals
@@ -245,8 +271,12 @@ class DataService {
     // IOU token uses 6 decimals
     const IOU_DECIMALS = 6;
 
+    const totalSwapVolumeEth = ethers.formatEther(totalSwapVolume);
+    const totalSwapVolumeUSD = (parseFloat(totalSwapVolumeEth) * ethPrice).toFixed(2);
+
     return {
-      totalSwapVolume: ethers.formatEther(totalSwapVolume),
+      totalSwapVolume: totalSwapVolumeEth,
+      totalSwapVolumeUSD,
       totalIOUMinted: ethers.formatUnits(totalIOUMinted, IOU_DECIMALS),
       totalIOUBurned: ethers.formatUnits(burnedAmount, IOU_DECIMALS),
       rebalanceVolume: '0', // Will need to track rebalance tx separately
@@ -258,6 +288,7 @@ class DataService {
       protocolFeesCollected: ethers.formatUnits(totalIOUFromSwaps / 100n, IOU_DECIMALS), // Estimate ~1% fee
       dailySwapVolume,
       dailyIOUMinted,
+      ethPrice,
       lastBlock: latestBlock,
     };
   }

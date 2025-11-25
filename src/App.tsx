@@ -54,6 +54,15 @@ function App() {
     return (num / 1000000).toFixed(2) + 'M';
   };
 
+  const formatUSD = (value: string) => {
+    const num = parseFloat(value);
+    if (num === 0) return '$0';
+    if (num < 1) return '$' + num.toFixed(2);
+    if (num < 1000) return '$' + num.toFixed(2);
+    if (num < 1000000) return '$' + (num / 1000).toFixed(2) + 'K';
+    return '$' + (num / 1000000).toFixed(2) + 'M';
+  };
+
   if (loading && !metrics) {
     return (
       <div className="app">
@@ -86,6 +95,11 @@ function App() {
         <p className="subtitle">Arbitrum Sepolia Testnet</p>
         <div className="header-info">
           <span className="network-badge">Arbitrum Sepolia</span>
+          {metrics.ethPrice > 0 && (
+            <span className="network-badge" style={{ background: '#2a5a2a' }}>
+              ETH: ${metrics.ethPrice.toLocaleString()}
+            </span>
+          )}
           {lastUpdate && (
             <span className="last-update">
               Last updated: {lastUpdate.toLocaleTimeString()}
@@ -101,8 +115,8 @@ function App() {
         <section className="metrics-grid">
           <div className="metric-card primary">
             <h3>Total Swap Volume</h3>
-            <div className="metric-value">{formatNumber(metrics.totalSwapVolume)}</div>
-            <div className="metric-unit">ETH</div>
+            <div className="metric-value">{formatUSD(metrics.totalSwapVolumeUSD)}</div>
+            <div className="metric-unit">{formatNumber(metrics.totalSwapVolume)} ETH</div>
           </div>
 
           <div className="metric-card primary">
@@ -162,27 +176,28 @@ function App() {
 
         <section className="charts-section">
           <div className="chart-card">
-            <h3>Daily Swap Volume</h3>
+            <h3>Daily Swap Volume (USD)</h3>
             {metrics.dailySwapVolume.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={metrics.dailySwapVolume}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                   <XAxis dataKey="date" stroke="#888" />
-                  <YAxis stroke="#888" />
+                  <YAxis stroke="#888" tickFormatter={(value) => '$' + value} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#1a1a1a',
                       border: '1px solid #333',
                       borderRadius: '8px',
                     }}
+                    formatter={(value: string) => ['$' + parseFloat(value).toLocaleString(), 'Volume']}
                   />
                   <Legend />
                   <Line
                     type="monotone"
-                    dataKey="volume"
+                    dataKey="volumeUSD"
                     stroke="#00ff88"
                     strokeWidth={2}
-                    name="Volume (ETH)"
+                    name="Volume (USD)"
                   />
                 </LineChart>
               </ResponsiveContainer>
