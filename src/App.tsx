@@ -116,7 +116,7 @@ function App() {
           <div className="metric-card primary">
             <h3>Total Swap Volume</h3>
             <div className="metric-value">{formatUSD(metrics.totalSwapVolumeUSD)}</div>
-            <div className="metric-unit">{formatNumber(metrics.totalSwapVolume)} ETH</div>
+            <div className="metric-unit">USD</div>
           </div>
 
           <div className="metric-card primary">
@@ -133,14 +133,14 @@ function App() {
 
           <div className="metric-card primary">
             <h3>Rebalance Volume</h3>
-            <div className="metric-value">{formatNumber(metrics.rebalanceVolume)}</div>
-            <div className="metric-unit">ETH</div>
+            <div className="metric-value">{formatUSD(metrics.rebalanceVolumeUSD)}</div>
+            <div className="metric-unit">USD</div>
           </div>
 
           <div className="metric-card secondary">
             <h3>Total Value Locked</h3>
-            <div className="metric-value">{formatNumber(metrics.totalValueLocked)}</div>
-            <div className="metric-unit">ETH</div>
+            <div className="metric-value">{formatUSD(metrics.totalValueLockedUSD)}</div>
+            <div className="metric-unit">USD</div>
           </div>
 
           <div className="metric-card secondary">
@@ -169,8 +169,8 @@ function App() {
 
           <div className="metric-card secondary">
             <h3>Protocol Fees</h3>
-            <div className="metric-value">{formatNumber(metrics.protocolFeesCollected)}</div>
-            <div className="metric-unit">ETH (Est.)</div>
+            <div className="metric-value">{formatUSD(metrics.protocolFeesUSD)}</div>
+            <div className="metric-unit">USD (Est.)</div>
           </div>
         </section>
 

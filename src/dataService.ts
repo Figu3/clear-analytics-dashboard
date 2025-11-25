@@ -2,23 +2,22 @@ import { ethers } from 'ethers';
 import { CONTRACTS, RPC_URL, ABIS, START_BLOCK } from './contracts';
 
 export interface ProtocolMetrics {
-  // Primary Metrics
-  totalSwapVolume: string;
+  // Primary Metrics (all in USD)
   totalSwapVolumeUSD: string;
   totalIOUMinted: string;
   totalIOUBurned: string;
-  rebalanceVolume: string;
+  rebalanceVolumeUSD: string;
 
   // Additional Metrics
-  totalValueLocked: string;
+  totalValueLockedUSD: string;
   numberOfVaults: number;
   activeUsers: number;
   totalTransactions: number;
   iouOutstandingSupply: string;
-  protocolFeesCollected: string;
+  protocolFeesUSD: string;
 
   // Time series data
-  dailySwapVolume: { date: string; volume: string; volumeUSD: string }[];
+  dailySwapVolume: { date: string; volumeUSD: string }[];
   dailyIOUMinted: { date: string; amount: string }[];
 
   // Price data
@@ -251,11 +250,10 @@ class DataService {
 
     const dailySwapVolume = Array.from(dailySwapMap.entries())
       .map(([date, volume]) => {
-        const volumeEth = ethers.formatEther(volume);
+        const volumeEth = parseFloat(ethers.formatEther(volume));
         return {
           date,
-          volume: volumeEth,
-          volumeUSD: (parseFloat(volumeEth) * ethPrice).toFixed(2),
+          volumeUSD: (volumeEth * ethPrice).toFixed(2),
         };
       })
       .sort((a, b) => a.date.localeCompare(b.date));
@@ -271,21 +269,22 @@ class DataService {
     // IOU token uses 6 decimals
     const IOU_DECIMALS = 6;
 
-    const totalSwapVolumeEth = ethers.formatEther(totalSwapVolume);
-    const totalSwapVolumeUSD = (parseFloat(totalSwapVolumeEth) * ethPrice).toFixed(2);
+    // Convert all ETH values to USD
+    const totalSwapVolumeEth = parseFloat(ethers.formatEther(totalSwapVolume));
+    const totalValueLockedEth = parseFloat(ethers.formatEther(depositData.totalDeposits));
+    const protocolFeesEth = parseFloat(ethers.formatEther(totalIOUFromSwaps / 100n));
 
     return {
-      totalSwapVolume: totalSwapVolumeEth,
-      totalSwapVolumeUSD,
+      totalSwapVolumeUSD: (totalSwapVolumeEth * ethPrice).toFixed(2),
       totalIOUMinted: ethers.formatUnits(totalIOUMinted, IOU_DECIMALS),
       totalIOUBurned: ethers.formatUnits(burnedAmount, IOU_DECIMALS),
-      rebalanceVolume: '0', // Will need to track rebalance tx separately
-      totalValueLocked: ethers.formatEther(depositData.totalDeposits),
+      rebalanceVolumeUSD: '0', // Will need to track rebalance tx separately
+      totalValueLockedUSD: (totalValueLockedEth * ethPrice).toFixed(2),
       numberOfVaults: vaultCount,
       activeUsers: allUsers.size,
       totalTransactions: swapEvents.length,
       iouOutstandingSupply: ethers.formatUnits(iouSupply, IOU_DECIMALS),
-      protocolFeesCollected: ethers.formatUnits(totalIOUFromSwaps / 100n, IOU_DECIMALS), // Estimate ~1% fee
+      protocolFeesUSD: (protocolFeesEth * ethPrice).toFixed(2),
       dailySwapVolume,
       dailyIOUMinted,
       ethPrice,
