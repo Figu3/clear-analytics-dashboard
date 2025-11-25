@@ -95,11 +95,15 @@ function App() {
         <p className="subtitle">Arbitrum Sepolia Testnet</p>
         <div className="header-info">
           <span className="network-badge">Arbitrum Sepolia</span>
-          {metrics.ethPrice > 0 && (
-            <span className="network-badge" style={{ background: '#2a5a2a' }}>
-              ETH: ${metrics.ethPrice.toLocaleString()}
+          {metrics.oraclePrices.map((oracle) => (
+            <span
+              key={oracle.asset}
+              className="network-badge"
+              style={{ background: oracle.symbol === 'GHO' ? '#5a2a5a' : '#2a5a2a' }}
+            >
+              {oracle.symbol}: ${oracle.price.toFixed(4)}
             </span>
-          )}
+          ))}
           {lastUpdate && (
             <span className="last-update">
               Last updated: {lastUpdate.toLocaleTimeString()}

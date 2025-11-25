@@ -1,6 +1,13 @@
 import { ethers } from 'ethers';
 import { CONTRACTS, RPC_URL, ABIS, START_BLOCK } from './contracts';
 
+export interface OraclePrice {
+  asset: string;
+  price: number;
+  decimals: number;
+  symbol: string;
+}
+
 export interface ProtocolMetrics {
   // Primary Metrics (all in USD)
   totalSwapVolumeUSD: string;
@@ -20,7 +27,8 @@ export interface ProtocolMetrics {
   dailySwapVolume: { date: string; volumeUSD: string }[];
   dailyIOUMinted: { date: string; amount: string }[];
 
-  // Price data
+  // Price data from oracles
+  oraclePrices: OraclePrice[];
   ethPrice: number;
 
   // Latest block processed
@@ -194,11 +202,40 @@ class DataService {
     }
   }
 
+  async getOraclePrices(): Promise<OraclePrice[]> {
+    try {
+      const response = await fetch('https://api-arb-sepolia-clear.trevee.xyz/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query { clearOracles { asset assetDecimals oracleDecimals price } }`
+        })
+      });
+      const data = await response.json();
+
+      // Map known addresses to symbols
+      const symbolMap: Record<string, string> = {
+        '0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d': 'USDC',
+        '0x69cac783c212bfae06e3c1a9a2e6ae6b17ba0614': 'GHO',
+      };
+
+      return data.data?.clearOracles?.map((oracle: { asset: string; oracleDecimals: string; price: string }) => ({
+        asset: oracle.asset,
+        price: parseInt(oracle.price) / Math.pow(10, parseInt(oracle.oracleDecimals)),
+        decimals: parseInt(oracle.oracleDecimals),
+        symbol: symbolMap[oracle.asset.toLowerCase()] || 'Unknown',
+      })) || [];
+    } catch (error) {
+      console.error('Error fetching oracle prices:', error);
+      return [];
+    }
+  }
+
   async getAllMetrics(): Promise<ProtocolMetrics> {
     const latestBlock = await this.getLatestBlock();
     const fromBlock = START_BLOCK;
 
-    // Fetch all events and ETH price in parallel
+    // Fetch all events and prices in parallel
     const [
       swapEvents,
       mintEvents,
@@ -207,6 +244,7 @@ class DataService {
       depositData,
       iouSupply,
       ethPrice,
+      oraclePrices,
     ] = await Promise.all([
       this.getSwapEvents(fromBlock, latestBlock),
       this.getIOUMintEvents(fromBlock, latestBlock),
@@ -215,6 +253,7 @@ class DataService {
       this.getDepositEvents(fromBlock, latestBlock),
       this.getIOUTotalSupply(),
       this.getEthPrice(),
+      this.getOraclePrices(),
     ]);
 
     // Calculate total swap volume
@@ -287,6 +326,7 @@ class DataService {
       protocolFeesUSD: (protocolFeesEth * ethPrice).toFixed(2),
       dailySwapVolume,
       dailyIOUMinted,
+      oraclePrices,
       ethPrice,
       lastBlock: latestBlock,
     };
