@@ -120,7 +120,8 @@ class DataService {
   }
 
   async getIOUMintEvents(fromBlock: number, toBlock: number): Promise<IOUMintEvent[]> {
-    const filter = this.iouContract.filters.ClearIOUMinted();
+    // IOU mints are Transfer events from address(0)
+    const filter = this.iouContract.filters.Transfer(ethers.ZeroAddress, null);
     const events = await this.iouContract.queryFilter(filter, fromBlock, toBlock);
 
     const mintEvents: IOUMintEvent[] = [];
@@ -132,7 +133,7 @@ class DataService {
 
       mintEvents.push({
         to: args.to,
-        amount: args.amount,
+        amount: args.value,
         blockNumber: event.blockNumber,
         timestamp: block.timestamp,
         txHash: event.transactionHash,
@@ -143,7 +144,8 @@ class DataService {
   }
 
   async getIOUBurnEvents(fromBlock: number, toBlock: number) {
-    const filter = this.iouContract.filters.ClearIOUBurned();
+    // IOU burns are Transfer events to address(0)
+    const filter = this.iouContract.filters.Transfer(null, ethers.ZeroAddress);
     const events = await this.iouContract.queryFilter(filter, fromBlock, toBlock);
 
     let totalBurned = 0n;
@@ -151,7 +153,7 @@ class DataService {
     for (const event of events) {
       if (!('args' in event)) continue;
       const args = event.args;
-      totalBurned += args.amount;
+      totalBurned += args.value;
     }
 
     return totalBurned;
