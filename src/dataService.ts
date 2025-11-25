@@ -84,30 +84,37 @@ class DataService {
   }
 
   async getSwapEvents(fromBlock: number, toBlock: number): Promise<SwapEvent[]> {
-    const filter = this.swapContract.filters.LiquiditySwapExecuted();
-    const events = await this.swapContract.queryFilter(filter, fromBlock, toBlock);
+    try {
+      const filter = this.vaultContract.filters.LiquiditySwapExecuted();
+      console.log('Querying LiquiditySwapExecuted events from vault:', CONTRACTS.ClearVault);
+      const events = await this.vaultContract.queryFilter(filter, fromBlock, toBlock);
+      console.log('Found', events.length, 'LiquiditySwapExecuted events');
 
-    const swapEvents: SwapEvent[] = [];
+      const swapEvents: SwapEvent[] = [];
 
-    for (const event of events) {
-      if (!('args' in event)) continue;
-      const block = await event.getBlock();
-      const args = event.args;
+      for (const event of events) {
+        if (!('args' in event)) continue;
+        const block = await event.getBlock();
+        const args = event.args;
 
-      swapEvents.push({
-        from: args.from,
-        to: args.to,
-        receiver: args.receiver,
-        amountIn: args.amountIn,
-        tokenAmountOut: args.tokenAmountOut,
-        iouAmountOut: args.iouAmountOut,
-        blockNumber: event.blockNumber,
-        timestamp: block.timestamp,
-        txHash: event.transactionHash,
-      });
+        swapEvents.push({
+          from: args.from,
+          to: args.to,
+          receiver: args.receiver,
+          amountIn: args.amountIn,
+          tokenAmountOut: args.tokenAmountOut,
+          iouAmountOut: args.iouAmountOut,
+          blockNumber: event.blockNumber,
+          timestamp: block.timestamp,
+          txHash: event.transactionHash,
+        });
+      }
+
+      return swapEvents;
+    } catch (error) {
+      console.error('Error fetching swap events:', error);
+      return [];
     }
-
-    return swapEvents;
   }
 
   async getIOUMintEvents(fromBlock: number, toBlock: number): Promise<IOUMintEvent[]> {
