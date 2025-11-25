@@ -12,6 +12,7 @@ export interface ProtocolMetrics {
   totalValueLocked: string;
   numberOfVaults: number;
   activeUsers: number;
+  totalTransactions: number;
   iouOutstandingSupply: string;
   protocolFeesCollected: string;
 
@@ -183,7 +184,7 @@ class DataService {
     console.log('Fetching protocol metrics...');
 
     const latestBlock = await this.getLatestBlock();
-    const fromBlock = Math.max(START_BLOCK, latestBlock - 100000); // Last ~100k blocks for faster testing
+    const fromBlock = START_BLOCK;
 
     console.log(`Fetching events from block ${fromBlock} to ${latestBlock}`);
 
@@ -256,6 +257,7 @@ class DataService {
       totalValueLocked: ethers.formatEther(depositData.totalDeposits),
       numberOfVaults: vaultCount,
       activeUsers: allUsers.size,
+      totalTransactions: swapEvents.length,
       iouOutstandingSupply: ethers.formatEther(iouSupply),
       protocolFeesCollected: ethers.formatEther(totalIOUFromSwaps / 100n), // Estimate ~1% fee
       dailySwapVolume,

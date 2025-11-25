@@ -142,6 +142,12 @@ function App() {
           </div>
 
           <div className="metric-card secondary">
+            <h3>Total Transactions</h3>
+            <div className="metric-value">{metrics.totalTransactions}</div>
+            <div className="metric-unit">Swaps</div>
+          </div>
+
+          <div className="metric-card secondary">
             <h3>Vaults Created</h3>
             <div className="metric-value">{metrics.numberOfVaults}</div>
             <div className="metric-unit">Total</div>
