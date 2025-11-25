@@ -271,6 +271,7 @@ function App() {
             This is a testnet deployment. All values are for testing purposes only.
           </p>
         </footer>
+
       </main>
     </div>
   );

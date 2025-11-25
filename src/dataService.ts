@@ -49,7 +49,6 @@ class DataService {
   private factoryContract: ethers.Contract;
   private vaultContract: ethers.Contract;
   private iouContract: ethers.Contract;
-  private swapContract: ethers.Contract;
 
   constructor() {
     this.provider = new ethers.JsonRpcProvider(RPC_URL);
@@ -71,12 +70,6 @@ class DataService {
       ABIS.ClearIOU,
       this.provider
     );
-
-    this.swapContract = new ethers.Contract(
-      CONTRACTS.ClearSwap,
-      ABIS.ClearSwap,
-      this.provider
-    );
   }
 
   async getLatestBlock(): Promise<number> {
@@ -86,9 +79,7 @@ class DataService {
   async getSwapEvents(fromBlock: number, toBlock: number): Promise<SwapEvent[]> {
     try {
       const filter = this.vaultContract.filters.LiquiditySwapExecuted();
-      console.log('Querying LiquiditySwapExecuted events from vault:', CONTRACTS.ClearVault);
       const events = await this.vaultContract.queryFilter(filter, fromBlock, toBlock);
-      console.log('Found', events.length, 'LiquiditySwapExecuted events');
 
       const swapEvents: SwapEvent[] = [];
 
@@ -188,12 +179,8 @@ class DataService {
   }
 
   async getAllMetrics(): Promise<ProtocolMetrics> {
-    console.log('Fetching protocol metrics...');
-
     const latestBlock = await this.getLatestBlock();
     const fromBlock = START_BLOCK;
-
-    console.log(`Fetching events from block ${fromBlock} to ${latestBlock}`);
 
     // Fetch all events in parallel
     const [
@@ -211,8 +198,6 @@ class DataService {
       this.getDepositEvents(fromBlock, latestBlock),
       this.getIOUTotalSupply(),
     ]);
-
-    console.log(`Found ${swapEvents.length} swap events, ${mintEvents.length} mint events`);
 
     // Calculate total swap volume
     let totalSwapVolume = 0n;
@@ -249,24 +234,28 @@ class DataService {
       .map(([date, volume]) => ({ date, volume: ethers.formatEther(volume) }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
+    // IOU token uses 6 decimals
     const dailyIOUMinted = Array.from(dailyMintMap.entries())
-      .map(([date, amount]) => ({ date, amount: ethers.formatEther(amount) }))
+      .map(([date, amount]) => ({ date, amount: ethers.formatUnits(amount, 6) }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
     // Combine unique users
     const allUsers = new Set([...depositData.uniqueUsers, ...swapUsers]);
 
+    // IOU token uses 6 decimals
+    const IOU_DECIMALS = 6;
+
     return {
       totalSwapVolume: ethers.formatEther(totalSwapVolume),
-      totalIOUMinted: ethers.formatEther(totalIOUMinted),
-      totalIOUBurned: ethers.formatEther(burnedAmount),
+      totalIOUMinted: ethers.formatUnits(totalIOUMinted, IOU_DECIMALS),
+      totalIOUBurned: ethers.formatUnits(burnedAmount, IOU_DECIMALS),
       rebalanceVolume: '0', // Will need to track rebalance tx separately
       totalValueLocked: ethers.formatEther(depositData.totalDeposits),
       numberOfVaults: vaultCount,
       activeUsers: allUsers.size,
       totalTransactions: swapEvents.length,
-      iouOutstandingSupply: ethers.formatEther(iouSupply),
-      protocolFeesCollected: ethers.formatEther(totalIOUFromSwaps / 100n), // Estimate ~1% fee
+      iouOutstandingSupply: ethers.formatUnits(iouSupply, IOU_DECIMALS),
+      protocolFeesCollected: ethers.formatUnits(totalIOUFromSwaps / 100n, IOU_DECIMALS), // Estimate ~1% fee
       dailySwapVolume,
       dailyIOUMinted,
       lastBlock: latestBlock,
