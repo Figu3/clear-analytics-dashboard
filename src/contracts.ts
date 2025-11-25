@@ -2,7 +2,8 @@
 
 export const CONTRACTS = {
   ClearFactory: '0x6f73CCe0210Fe9e1B8c650739C06E8a400d09E68',
-  ClearVault: '0xD842772F0a6cB1276628f2C810f41B2893B717C4',
+  ClearVault: '0x1CfB48224Ef579A11B98126151584EEcB0E47960', // Deployed vault instance (was implementation)
+  ClearVaultImplementation: '0xD842772F0a6cB1276628f2C810f41B2893B717C4', // Implementation contract
   ClearIOU: '0x54E2F1eF78F386c7CBC5E353A4d49F353CBFca23',
   ClearSwap: '0x5B69f9D067077c3FBb22Bd732d2c34A9731fC162',
   ClearOracle: '0x50c2584E2f32533e9307df9eE0Beb229fC20f517',
@@ -43,4 +44,4 @@ export const ABIS = {
 };
 
 // Block number to start fetching events from (deployment block or earlier)
-export const START_BLOCK = 0; // Will fetch all historical events
+export const START_BLOCK = 100000000; // Start from recent blocks for faster queries
