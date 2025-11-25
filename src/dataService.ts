@@ -89,6 +89,7 @@ class DataService {
     const swapEvents: SwapEvent[] = [];
 
     for (const event of events) {
+      if (!('args' in event)) continue;
       const block = await event.getBlock();
       const args = event.args;
 
@@ -115,6 +116,7 @@ class DataService {
     const mintEvents: IOUMintEvent[] = [];
 
     for (const event of events) {
+      if (!('args' in event)) continue;
       const block = await event.getBlock();
       const args = event.args;
 
@@ -137,6 +139,7 @@ class DataService {
     let totalBurned = 0n;
 
     for (const event of events) {
+      if (!('args' in event)) continue;
       const args = event.args;
       totalBurned += args.amount;
     }
@@ -158,6 +161,7 @@ class DataService {
     const uniqueUsers = new Set<string>();
 
     for (const event of events) {
+      if (!('args' in event)) continue;
       const args = event.args;
       totalDeposits += args.assets;
       uniqueUsers.add(args.sender.toLowerCase());

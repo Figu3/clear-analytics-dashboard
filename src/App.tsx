@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { dataService, ProtocolMetrics } from './dataService';
+import { dataService } from './dataService';
+import type { ProtocolMetrics } from './dataService';
 import {
   LineChart,
   Line,
