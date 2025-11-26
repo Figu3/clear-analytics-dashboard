@@ -14,6 +14,13 @@ export interface ReserveBalance {
   balanceUSD: string;
 }
 
+export interface TVLDataPoint {
+  date: string;
+  GHO: number;
+  USDC: number;
+  total: number;
+}
+
 export interface ProtocolMetrics {
   // Primary Metrics (all in USD)
   totalSwapVolumeUSD: string;
@@ -25,6 +32,7 @@ export interface ProtocolMetrics {
   totalValueLockedUSD: string;
   reserveBalances: ReserveBalance[];
   numberOfVaults: number;
+  numberOfRebalances: number;
   activeUsers: number;
   totalTransactions: number;
   iouOutstandingSupply: string;
@@ -33,6 +41,7 @@ export interface ProtocolMetrics {
   // Time series data
   dailySwapVolume: { date: string; volumeUSD: string }[];
   dailyIOUMinted: { date: string; amount: string }[];
+  tvlHistory: TVLDataPoint[];
 
   // Price data from oracles
   oraclePrices: OraclePrice[];
@@ -253,6 +262,23 @@ class DataService {
     }
   }
 
+  async getRebalanceCount(): Promise<number> {
+    try {
+      const response = await fetch('https://api-arb-sepolia-clear.trevee.xyz/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query { clearLiquidityRebalances { id } }`
+        })
+      });
+      const data = await response.json();
+      return data.data?.clearLiquidityRebalances?.length || 0;
+    } catch (error) {
+      console.error('Error fetching rebalance count:', error);
+      return 0;
+    }
+  }
+
   async getOraclePrices(): Promise<OraclePrice[]> {
     try {
       const response = await fetch('https://api-arb-sepolia-clear.trevee.xyz/graphql', {
@@ -297,6 +323,7 @@ class DataService {
       vaultTotalAssets,
       ethPrice,
       oraclePrices,
+      rebalanceCount,
     ] = await Promise.all([
       this.getSwapEvents(fromBlock, latestBlock),
       this.getIOUMintEvents(fromBlock, latestBlock),
@@ -307,6 +334,7 @@ class DataService {
       this.getVaultTotalAssets(),
       this.getEthPrice(),
       this.getOraclePrices(),
+      this.getRebalanceCount(),
     ]);
 
     // Fetch reserve balances (needs oracle prices for USD conversion)
@@ -358,6 +386,56 @@ class DataService {
       .map(([date, amount]) => ({ date, amount: ethers.formatUnits(amount, 6) }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
+    // Build TVL history from swap events
+    // Track cumulative token balances by date
+    const GHO_ADDRESS = CONTRACTS.MockGHO.toLowerCase();
+    const USDC_ADDRESS = '0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d';
+    const usdcOracle = oraclePrices.find(o => o.symbol === 'USDC');
+    const usdcPrice = usdcOracle?.price || 1;
+
+    // Sort swaps by timestamp
+    const sortedSwaps = [...swapEvents].sort((a, b) => a.timestamp - b.timestamp);
+
+    // Track cumulative balances
+    let cumulativeGHO = 0n;
+    let cumulativeUSDC = 0n;
+    const dailyTVLMap = new Map<string, { gho: bigint; usdc: bigint }>();
+
+    for (const swap of sortedSwaps) {
+      const date = new Date(swap.timestamp * 1000).toISOString().split('T')[0];
+
+      // amountIn goes INTO the vault (from token)
+      // tokenAmountOut goes OUT of the vault (to token)
+      if (swap.from.toLowerCase() === GHO_ADDRESS) {
+        cumulativeGHO += swap.amountIn;
+      } else if (swap.from.toLowerCase() === USDC_ADDRESS) {
+        cumulativeUSDC += swap.amountIn;
+      }
+
+      if (swap.to.toLowerCase() === GHO_ADDRESS) {
+        cumulativeGHO -= swap.tokenAmountOut;
+      } else if (swap.to.toLowerCase() === USDC_ADDRESS) {
+        cumulativeUSDC -= swap.tokenAmountOut;
+      }
+
+      dailyTVLMap.set(date, { gho: cumulativeGHO, usdc: cumulativeUSDC });
+    }
+
+    const tvlHistory: TVLDataPoint[] = Array.from(dailyTVLMap.entries())
+      .map(([date, balances]) => {
+        const ghoAmount = parseFloat(ethers.formatEther(balances.gho));
+        const usdcAmount = parseFloat(ethers.formatUnits(balances.usdc, 6));
+        const ghoUSD = ghoAmount * ghoPrice;
+        const usdcUSD = usdcAmount * usdcPrice;
+        return {
+          date,
+          GHO: Math.round(ghoUSD * 100) / 100,
+          USDC: Math.round(usdcUSD * 100) / 100,
+          total: Math.round((ghoUSD + usdcUSD) * 100) / 100,
+        };
+      })
+      .sort((a, b) => a.date.localeCompare(b.date));
+
     // Combine unique users
     const allUsers = new Set([...depositData.uniqueUsers, ...swapUsers]);
 
@@ -383,12 +461,14 @@ class DataService {
       totalValueLockedUSD,
       reserveBalances,
       numberOfVaults: vaultCount,
+      numberOfRebalances: rebalanceCount,
       activeUsers: allUsers.size,
       totalTransactions: swapEvents.length,
       iouOutstandingSupply: ethers.formatUnits(iouSupply, IOU_DECIMALS),
       protocolFeesUSD: (protocolFeesEth * ethPrice).toFixed(2),
       dailySwapVolume,
       dailyIOUMinted,
+      tvlHistory,
       oraclePrices,
       ethPrice,
       lastBlock: latestBlock,

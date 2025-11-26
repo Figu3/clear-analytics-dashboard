@@ -6,6 +6,8 @@ import {
   Line,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -180,6 +182,12 @@ function App() {
           </div>
 
           <div className="metric-card secondary">
+            <h3>Rebalances</h3>
+            <div className="metric-value">{metrics.numberOfRebalances}</div>
+            <div className="metric-unit">Total</div>
+          </div>
+
+          <div className="metric-card secondary">
             <h3>Protocol Fees</h3>
             <div className="metric-value">{formatUSD(metrics.protocolFeesUSD)}</div>
             <div className="metric-unit">USD (Est.)</div>
@@ -239,6 +247,48 @@ function App() {
               </ResponsiveContainer>
             ) : (
               <div className="no-data">No IOU minting data yet</div>
+            )}
+          </div>
+
+          <div className="chart-card full-width">
+            <h3>TVL Evolution by Token (USD)</h3>
+            {metrics.tvlHistory.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={metrics.tvlHistory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis dataKey="date" stroke="#888" />
+                  <YAxis stroke="#888" tickFormatter={(value) => '$' + value} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1a1a1a',
+                      border: '1px solid #333',
+                      borderRadius: '8px',
+                    }}
+                    formatter={(value: number) => ['$' + value.toLocaleString(), '']}
+                  />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="GHO"
+                    stackId="1"
+                    stroke="#9966ff"
+                    fill="#9966ff"
+                    fillOpacity={0.8}
+                    name="GHO (USD)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="USDC"
+                    stackId="1"
+                    stroke="#2775ca"
+                    fill="#2775ca"
+                    fillOpacity={0.8}
+                    name="USDC (USD)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="no-data">No TVL history data yet</div>
             )}
           </div>
         </section>

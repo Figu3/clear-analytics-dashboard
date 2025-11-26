@@ -162,6 +162,10 @@
   color: #fff;
 }
 
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
+
 .no-data {
   padding: 4rem;
   text-align: center;
