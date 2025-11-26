@@ -8,6 +8,12 @@ export interface OraclePrice {
   symbol: string;
 }
 
+export interface ReserveBalance {
+  symbol: string;
+  balance: string;
+  balanceUSD: string;
+}
+
 export interface ProtocolMetrics {
   // Primary Metrics (all in USD)
   totalSwapVolumeUSD: string;
@@ -17,6 +23,7 @@ export interface ProtocolMetrics {
 
   // Additional Metrics
   totalValueLockedUSD: string;
+  reserveBalances: ReserveBalance[];
   numberOfVaults: number;
   activeUsers: number;
   totalTransactions: number;
@@ -191,6 +198,48 @@ class DataService {
     }
   }
 
+  async getVaultTotalAssets(): Promise<bigint> {
+    try {
+      return await this.vaultContract.totalAssets();
+    } catch (error) {
+      console.error('Error fetching vault total assets:', error);
+      return 0n;
+    }
+  }
+
+  async getReserveBalances(oraclePrices: OraclePrice[]): Promise<ReserveBalance[]> {
+    const ERC20_ABI = ['function balanceOf(address) view returns (uint256)'];
+    const reserves: ReserveBalance[] = [];
+
+    // Token configs: address, symbol, decimals
+    const tokens = [
+      { address: CONTRACTS.MockGHO, symbol: 'GHO', decimals: 18 },
+      { address: '0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d', symbol: 'USDC', decimals: 6 },
+    ];
+
+    for (const token of tokens) {
+      try {
+        const tokenContract = new ethers.Contract(token.address, ERC20_ABI, this.provider);
+        const balance = await tokenContract.balanceOf(CONTRACTS.ClearVault);
+        const formattedBalance = ethers.formatUnits(balance, token.decimals);
+
+        // Find oracle price for this token
+        const oracle = oraclePrices.find(o => o.symbol === token.symbol);
+        const price = oracle?.price || 1; // Default to 1 for stablecoins
+
+        reserves.push({
+          symbol: token.symbol,
+          balance: formattedBalance,
+          balanceUSD: (parseFloat(formattedBalance) * price).toFixed(2),
+        });
+      } catch (error) {
+        console.error(`Error fetching ${token.symbol} balance:`, error);
+      }
+    }
+
+    return reserves;
+  }
+
   async getEthPrice(): Promise<number> {
     try {
       const response = await fetch(
@@ -245,6 +294,7 @@ class DataService {
       vaultCount,
       depositData,
       iouSupply,
+      vaultTotalAssets,
       ethPrice,
       oraclePrices,
     ] = await Promise.all([
@@ -254,9 +304,13 @@ class DataService {
       this.getVaultCreationEvents(fromBlock, latestBlock),
       this.getDepositEvents(fromBlock, latestBlock),
       this.getIOUTotalSupply(),
+      this.getVaultTotalAssets(),
       this.getEthPrice(),
       this.getOraclePrices(),
     ]);
+
+    // Fetch reserve balances (needs oracle prices for USD conversion)
+    const reserveBalances = await this.getReserveBalances(oraclePrices);
 
     // Calculate total swap volume
     let totalSwapVolume = 0n;
@@ -312,15 +366,22 @@ class DataService {
 
     // Convert all ETH values to USD
     const totalSwapVolumeEth = parseFloat(ethers.formatEther(totalSwapVolume));
-    const totalValueLockedEth = parseFloat(ethers.formatEther(depositData.totalDeposits));
     const protocolFeesEth = parseFloat(ethers.formatEther(totalIOUFromSwaps / 100n));
+
+    // Calculate TVL from vault totalAssets (in GHO, 18 decimals)
+    // Use GHO oracle price for conversion
+    const ghoOracle = oraclePrices.find(o => o.symbol === 'GHO');
+    const ghoPrice = ghoOracle?.price || 1;
+    const totalAssetsFormatted = parseFloat(ethers.formatEther(vaultTotalAssets));
+    const totalValueLockedUSD = (totalAssetsFormatted * ghoPrice).toFixed(2);
 
     return {
       totalSwapVolumeUSD: (totalSwapVolumeEth * ethPrice).toFixed(2),
       totalIOUMinted: ethers.formatUnits(totalIOUMinted, IOU_DECIMALS),
       totalIOUBurned: ethers.formatUnits(burnedAmount, IOU_DECIMALS),
       rebalanceVolumeUSD: '0', // Will need to track rebalance tx separately
-      totalValueLockedUSD: (totalValueLockedEth * ethPrice).toFixed(2),
+      totalValueLockedUSD,
+      reserveBalances,
       numberOfVaults: vaultCount,
       activeUsers: allUsers.size,
       totalTransactions: swapEvents.length,

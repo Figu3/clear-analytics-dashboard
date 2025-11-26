@@ -147,6 +147,14 @@ function App() {
             <div className="metric-unit">USD</div>
           </div>
 
+          {metrics.reserveBalances.map((reserve) => (
+            <div key={reserve.symbol} className="metric-card secondary">
+              <h3>{reserve.symbol} Reserve</h3>
+              <div className="metric-value">{formatNumber(reserve.balance)}</div>
+              <div className="metric-unit">{formatUSD(reserve.balanceUSD)}</div>
+            </div>
+          ))}
+
           <div className="metric-card secondary">
             <h3>IOU Outstanding</h3>
             <div className="metric-value">{formatNumber(metrics.iouOutstandingSupply)}</div>
