@@ -217,6 +217,23 @@
   color: #00ff88;
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9rem;
+  flex: 1;
+  text-align: right;
+  margin-right: 0.5rem;
+}
+
+.copy-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.25rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.copy-btn:hover {
+  opacity: 1;
 }
 
 .metrics-explanation {

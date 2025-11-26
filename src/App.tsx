@@ -17,6 +17,24 @@ import {
 } from 'recharts';
 import './App.css';
 
+function AddressRow({ label, address }: { label: string; address: string }) {
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(address);
+  };
+
+  const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+  return (
+    <div className="address-item">
+      <span className="label">{label}:</span>
+      <code>{shortAddress}</code>
+      <button className="copy-btn" onClick={copyToClipboard} title="Copy address">
+        📋
+      </button>
+    </div>
+  );
+}
+
 function App() {
   const [metrics, setMetrics] = useState<ProtocolMetrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -297,22 +315,12 @@ function App() {
           <div className="info-card">
             <h3>Contract Addresses</h3>
             <div className="address-list">
-              <div className="address-item">
-                <span className="label">Factory:</span>
-                <code>0x6f73...9E68</code>
-              </div>
-              <div className="address-item">
-                <span className="label">Swap:</span>
-                <code>0x5B69...C162</code>
-              </div>
-              <div className="address-item">
-                <span className="label">Vault:</span>
-                <code>0xD842...17C4</code>
-              </div>
-              <div className="address-item">
-                <span className="label">IOU:</span>
-                <code>0x54E2...ca23</code>
-              </div>
+              <AddressRow label="Factory" address="0x6f73CCe0210Fe9e1B8c650739C06E8a400d09E68" />
+              <AddressRow label="Swap" address="0x5B69f9D067077c3FBb22Bd732d2c34A9731fC162" />
+              <AddressRow label="Vault" address="0x1CfB48224Ef579A11B98126151584EEcB0E47960" />
+              <AddressRow label="IOU" address="0xb37d72c8022ac57c95b90ab3fbb21f9146fe6810" />
+              <AddressRow label="GHO" address="0x69cAC783c212Bfae06E3c1A9a2E6Ae6b17bA0614" />
+              <AddressRow label="USDC" address="0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d" />
             </div>
           </div>
 
