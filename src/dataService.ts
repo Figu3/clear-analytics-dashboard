@@ -390,6 +390,8 @@ class DataService {
     // Track cumulative token balances by date
     const GHO_ADDRESS = CONTRACTS.MockGHO.toLowerCase();
     const USDC_ADDRESS = '0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d';
+    const ghoOracle = oraclePrices.find(o => o.symbol === 'GHO');
+    const ghoPrice = ghoOracle?.price || 1;
     const usdcOracle = oraclePrices.find(o => o.symbol === 'USDC');
     const usdcPrice = usdcOracle?.price || 1;
 
@@ -447,9 +449,6 @@ class DataService {
     const protocolFeesEth = parseFloat(ethers.formatEther(totalIOUFromSwaps / 100n));
 
     // Calculate TVL from vault totalAssets (in GHO, 18 decimals)
-    // Use GHO oracle price for conversion
-    const ghoOracle = oraclePrices.find(o => o.symbol === 'GHO');
-    const ghoPrice = ghoOracle?.price || 1;
     const totalAssetsFormatted = parseFloat(ethers.formatEther(vaultTotalAssets));
     const totalValueLockedUSD = (totalAssetsFormatted * ghoPrice).toFixed(2);
 
