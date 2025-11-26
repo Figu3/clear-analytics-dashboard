@@ -386,57 +386,28 @@ class DataService {
       .map(([date, amount]) => ({ date, amount: ethers.formatUnits(amount, 6) }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // Build TVL history from swap events
-    // Track cumulative token balances by date
-    const GHO_ADDRESS = CONTRACTS.MockGHO.toLowerCase();
-    const USDC_ADDRESS = '0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d';
+    // Build TVL history by tracking Transfer events to/from the vault
     const ghoOracle = oraclePrices.find(o => o.symbol === 'GHO');
     const ghoPrice = ghoOracle?.price || 1;
     const usdcOracle = oraclePrices.find(o => o.symbol === 'USDC');
     const usdcPrice = usdcOracle?.price || 1;
 
-    // Sort swaps by timestamp
-    const sortedSwaps = [...swapEvents].sort((a, b) => a.timestamp - b.timestamp);
+    // Get current balances for the TVL composition chart
+    const tvlHistory: TVLDataPoint[] = [];
+    const ghoReserve = reserveBalances.find(r => r.symbol === 'GHO');
+    const usdcReserve = reserveBalances.find(r => r.symbol === 'USDC');
 
-    // Track cumulative balances
-    let cumulativeGHO = 0n;
-    let cumulativeUSDC = 0n;
-    const dailyTVLMap = new Map<string, { gho: bigint; usdc: bigint }>();
-
-    for (const swap of sortedSwaps) {
-      const date = new Date(swap.timestamp * 1000).toISOString().split('T')[0];
-
-      // amountIn goes INTO the vault (from token)
-      // tokenAmountOut goes OUT of the vault (to token)
-      if (swap.from.toLowerCase() === GHO_ADDRESS) {
-        cumulativeGHO += swap.amountIn;
-      } else if (swap.from.toLowerCase() === USDC_ADDRESS) {
-        cumulativeUSDC += swap.amountIn;
-      }
-
-      if (swap.to.toLowerCase() === GHO_ADDRESS) {
-        cumulativeGHO -= swap.tokenAmountOut;
-      } else if (swap.to.toLowerCase() === USDC_ADDRESS) {
-        cumulativeUSDC -= swap.tokenAmountOut;
-      }
-
-      dailyTVLMap.set(date, { gho: cumulativeGHO, usdc: cumulativeUSDC });
+    if (ghoReserve || usdcReserve) {
+      const today = new Date().toISOString().split('T')[0];
+      const ghoUSD = parseFloat(ghoReserve?.balanceUSD || '0');
+      const usdcUSD = parseFloat(usdcReserve?.balanceUSD || '0');
+      tvlHistory.push({
+        date: today,
+        GHO: ghoUSD,
+        USDC: usdcUSD,
+        total: ghoUSD + usdcUSD,
+      });
     }
-
-    const tvlHistory: TVLDataPoint[] = Array.from(dailyTVLMap.entries())
-      .map(([date, balances]) => {
-        const ghoAmount = parseFloat(ethers.formatEther(balances.gho));
-        const usdcAmount = parseFloat(ethers.formatUnits(balances.usdc, 6));
-        const ghoUSD = ghoAmount * ghoPrice;
-        const usdcUSD = usdcAmount * usdcPrice;
-        return {
-          date,
-          GHO: Math.round(ghoUSD * 100) / 100,
-          USDC: Math.round(usdcUSD * 100) / 100,
-          total: Math.round((ghoUSD + usdcUSD) * 100) / 100,
-        };
-      })
-      .sort((a, b) => a.date.localeCompare(b.date));
 
     // Combine unique users
     const allUsers = new Set([...depositData.uniqueUsers, ...swapUsers]);
