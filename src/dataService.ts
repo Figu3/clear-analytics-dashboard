@@ -386,12 +386,6 @@ class DataService {
       .map(([date, amount]) => ({ date, amount: ethers.formatUnits(amount, 6) }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // Build TVL history by tracking Transfer events to/from the vault
-    const ghoOracle = oraclePrices.find(o => o.symbol === 'GHO');
-    const ghoPrice = ghoOracle?.price || 1;
-    const usdcOracle = oraclePrices.find(o => o.symbol === 'USDC');
-    const usdcPrice = usdcOracle?.price || 1;
-
     // Get current balances for the TVL composition chart
     const tvlHistory: TVLDataPoint[] = [];
     const ghoReserve = reserveBalances.find(r => r.symbol === 'GHO');
@@ -420,6 +414,8 @@ class DataService {
     const protocolFeesEth = parseFloat(ethers.formatEther(totalIOUFromSwaps / 100n));
 
     // Calculate TVL from vault totalAssets (in GHO, 18 decimals)
+    const ghoOracle = oraclePrices.find(o => o.symbol === 'GHO');
+    const ghoPrice = ghoOracle?.price || 1;
     const totalAssetsFormatted = parseFloat(ethers.formatEther(vaultTotalAssets));
     const totalValueLockedUSD = (totalAssetsFormatted * ghoPrice).toFixed(2);
 
