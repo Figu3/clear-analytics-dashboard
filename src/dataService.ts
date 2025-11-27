@@ -456,15 +456,15 @@ class DataService {
       .map(([date, amount]) => ({ date, amount: ethers.formatUnits(amount, 6) }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // Get current balances for the TVL composition chart
+    // Get current balances for the TVL composition chart (from token allocations)
     const tvlHistory: TVLDataPoint[] = [];
-    const ghoReserve = reserveBalances.find(r => r.symbol === 'GHO');
-    const usdcReserve = reserveBalances.find(r => r.symbol === 'USDC');
+    const ghoAllocation = tokenAllocationData.allocations.find(a => a.symbol === 'GHO');
+    const usdcAllocation = tokenAllocationData.allocations.find(a => a.symbol === 'USDC');
 
-    if (ghoReserve || usdcReserve) {
+    if (ghoAllocation || usdcAllocation) {
       const today = new Date().toISOString().split('T')[0];
-      const ghoUSD = parseFloat(ghoReserve?.balanceUSD || '0');
-      const usdcUSD = parseFloat(usdcReserve?.balanceUSD || '0');
+      const ghoUSD = parseFloat(ghoAllocation?.balanceUSD || '0');
+      const usdcUSD = parseFloat(usdcAllocation?.balanceUSD || '0');
       tvlHistory.push({
         date: today,
         GHO: ghoUSD,
