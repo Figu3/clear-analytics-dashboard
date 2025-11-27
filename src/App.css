@@ -434,6 +434,352 @@
   color: #666;
 }
 
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: #0a0a0a;
+  border-bottom: 1px solid #333;
+}
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid #333;
+  color: #888;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tab-btn:hover {
+  border-color: #00ccff;
+  color: #00ccff;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+.route-open-indicator {
+  width: 8px;
+  height: 8px;
+  background: #00ff88;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* Route Status Section */
+.route-status-section {
+  margin-bottom: 2rem;
+}
+
+.route-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.route-status-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.overall-status {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.overall-status.open {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+  border: 2px solid #00ff88;
+  animation: glow-green 2s infinite;
+}
+
+.overall-status.closed {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+  border: 2px solid #ff4444;
+}
+
+@keyframes glow-green {
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
+}
+
+.route-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.route-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 2px solid #333;
+  transition: all 0.3s ease;
+}
+
+.route-card.open {
+  border-color: #00ff88;
+  box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
+}
+
+.route-card.closed {
+  border-color: #ff4444;
+  opacity: 0.7;
+}
+
+.route-card:hover {
+  transform: translateY(-4px);
+}
+
+.route-direction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.route-direction .token {
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: #0a0a0a;
+}
+
+.route-direction .token.from {
+  color: #ff88ff;
+}
+
+.route-direction .token.to {
+  color: #00ccff;
+}
+
+.route-direction .arrow {
+  color: #666;
+  font-size: 1.2rem;
+}
+
+.route-status-badge {
+  text-align: center;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.route-card.open .route-status-badge {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+}
+
+.route-card.closed .route-status-badge {
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+}
+
+.route-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.route-details .detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.route-details .label {
+  color: #888;
+}
+
+.route-details .value {
+  color: #fff;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.route-details .value.depegged {
+  color: #00ff88;
+  font-weight: 700;
+}
+
+/* Route Stats Section */
+.route-stats-section {
+  margin-bottom: 2rem;
+}
+
+.route-stats-section h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #00ccff;
+  text-align: center;
+}
+
+.stat-card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Monaco', 'Courier New', monospace;
+  margin-bottom: 0.25rem;
+}
+
+.stat-unit {
+  font-size: 0.8rem;
+  color: #666;
+  text-transform: uppercase;
+}
+
+/* Route History Section */
+.route-history-section {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #333;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.history-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.clear-history-btn {
+  background: transparent;
+  border: 1px solid #ff4444;
+  color: #ff4444;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clear-history-btn:hover {
+  background: rgba(255, 68, 68, 0.2);
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.history-table th {
+  text-align: left;
+  padding: 1rem 0.75rem;
+  border-bottom: 2px solid #00ff88;
+  color: #888;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+.history-table td {
+  padding: 1rem 0.75rem;
+  border-bottom: 1px solid #333;
+  color: #fff;
+}
+
+.history-table tbody tr:hover {
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.history-table tbody tr.ongoing {
+  background: rgba(0, 255, 136, 0.1);
+}
+
+.route-cell {
+  font-weight: 600;
+  color: #00ccff;
+}
+
+.duration-cell {
+  font-family: 'Monaco', 'Courier New', monospace;
+  color: #00ff88;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.status-badge.open {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+}
+
+.status-badge.closed {
+  background: rgba(136, 136, 136, 0.2);
+  color: #888;
+}
+
+.history-note {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #0a0a0a;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #888;
+  border-left: 3px solid #00ccff;
+}
+
 @media (max-width: 768px) {
   .charts-section,
   .info-section {
@@ -454,6 +800,43 @@
 
   .allocation-table th,
   .allocation-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .tab-navigation {
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .route-status-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .route-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .history-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .history-table {
+    font-size: 0.8rem;
+  }
+
+  .history-table th,
+  .history-table td {
     padding: 0.75rem 0.5rem;
   }
 }

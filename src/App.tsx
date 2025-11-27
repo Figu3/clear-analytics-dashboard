@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { dataService } from './dataService';
-import type { ProtocolMetrics, VaultTokenAllocation } from './dataService';
+import type { ProtocolMetrics, VaultTokenAllocation, RouteStatusMetrics, RouteOpenEvent } from './dataService';
 import {
   LineChart,
   Line,
@@ -33,11 +33,15 @@ function AddressRow({ label, address }: { label: string; address: string }) {
   );
 }
 
+type TabType = 'overview' | 'route-status';
+
 function App() {
   const [metrics, setMetrics] = useState<ProtocolMetrics | null>(null);
+  const [routeStatus, setRouteStatus] = useState<RouteStatusMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   const fetchData = async () => {
     try {
@@ -45,6 +49,11 @@ function App() {
       setError(null);
       const data = await dataService.getAllMetrics();
       setMetrics(data);
+
+      // Fetch route status metrics
+      const routeMetrics = await dataService.getRouteStatusMetrics(data.oraclePrices);
+      setRouteStatus(routeMetrics);
+
       setLastUpdate(new Date());
     } catch (err) {
       console.error('Error fetching metrics:', err);
@@ -79,6 +88,28 @@ function App() {
     if (num < 1000) return '$' + num.toFixed(2);
     if (num < 1000000) return '$' + (num / 1000).toFixed(2) + 'K';
     return '$' + (num / 1000000).toFixed(2) + 'M';
+  };
+
+  const formatDuration = (ms: number | null): string => {
+    if (ms === null) return 'Ongoing';
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    if (hours > 0) return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+    return `${seconds}s`;
+  };
+
+  const formatDateTime = (timestamp: number): string => {
+    return new Date(timestamp).toLocaleString();
+  };
+
+  const clearRouteHistory = () => {
+    localStorage.removeItem('clear_route_events');
+    fetchData(); // Refresh to update the display
   };
 
   if (loading && !metrics) {
@@ -133,7 +164,25 @@ function App() {
         </div>
       </header>
 
+      <nav className="tab-navigation">
+        <button
+          className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          Overview
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'route-status' ? 'active' : ''}`}
+          onClick={() => setActiveTab('route-status')}
+        >
+          Route Status
+          {routeStatus?.anyRouteOpen && <span className="route-open-indicator" />}
+        </button>
+      </nav>
+
       <main className="dashboard">
+        {activeTab === 'overview' && (
+          <>
         <section className="metrics-grid">
           <div className="metric-card primary">
             <h3>Total Swap Volume</h3>
@@ -385,6 +434,133 @@ function App() {
             </ul>
           </div>
         </section>
+          </>
+        )}
+
+        {activeTab === 'route-status' && routeStatus && (
+          <>
+            {/* Current Route Status */}
+            <section className="route-status-section">
+              <div className="route-status-header">
+                <h2>Current Route Status</h2>
+                <div className={`overall-status ${routeStatus.anyRouteOpen ? 'open' : 'closed'}`}>
+                  {routeStatus.anyRouteOpen ? 'ROUTES OPEN' : 'ALL ROUTES CLOSED'}
+                </div>
+              </div>
+
+              <div className="route-cards">
+                {routeStatus.routes.map((route) => (
+                  <div
+                    key={`${route.fromAsset}-${route.toAsset}`}
+                    className={`route-card ${route.isOpen ? 'open' : 'closed'}`}
+                  >
+                    <div className="route-direction">
+                      <span className="token from">{route.fromSymbol}</span>
+                      <span className="arrow">→</span>
+                      <span className="token to">{route.toSymbol}</span>
+                    </div>
+                    <div className="route-status-badge">
+                      {route.isOpen ? 'OPEN' : 'CLOSED'}
+                    </div>
+                    <div className="route-details">
+                      <div className="detail-row">
+                        <span className="label">Depeg:</span>
+                        <span className={`value ${route.depegPercentage > route.threshold ? 'depegged' : ''}`}>
+                          {route.depegPercentage.toFixed(4)}%
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="label">Threshold:</span>
+                        <span className="value">{route.threshold.toFixed(2)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Route Statistics */}
+            <section className="route-stats-section">
+              <h2>Route Statistics</h2>
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <h3>Times Opened</h3>
+                  <div className="stat-value">{routeStatus.totalTimesOpened}</div>
+                  <div className="stat-unit">Events</div>
+                </div>
+                <div className="stat-card">
+                  <h3>Average Open Duration</h3>
+                  <div className="stat-value">
+                    {routeStatus.averageOpenDurationMs !== null
+                      ? formatDuration(routeStatus.averageOpenDurationMs)
+                      : 'N/A'}
+                  </div>
+                  <div className="stat-unit">Per Event</div>
+                </div>
+                <div className="stat-card">
+                  <h3>Total Open Duration</h3>
+                  <div className="stat-value">
+                    {formatDuration(routeStatus.totalOpenDurationMs)}
+                  </div>
+                  <div className="stat-unit">Cumulative</div>
+                </div>
+                <div className="stat-card">
+                  <h3>Depeg Threshold</h3>
+                  <div className="stat-value">{((10000 - routeStatus.depegThreshold) / 100).toFixed(2)}%</div>
+                  <div className="stat-unit">From Contract</div>
+                </div>
+              </div>
+            </section>
+
+            {/* Route History */}
+            <section className="route-history-section">
+              <div className="history-header">
+                <h2>Route Open History</h2>
+                <button onClick={clearRouteHistory} className="clear-history-btn">
+                  Clear History
+                </button>
+              </div>
+              {routeStatus.routeOpenEvents.length > 0 ? (
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Route</th>
+                      <th>Opened At</th>
+                      <th>Closed At</th>
+                      <th>Duration</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {routeStatus.routeOpenEvents
+                      .sort((a: RouteOpenEvent, b: RouteOpenEvent) => b.openedAt - a.openedAt)
+                      .map((event: RouteOpenEvent) => (
+                        <tr key={event.id} className={event.closedAt === null ? 'ongoing' : ''}>
+                          <td className="route-cell">{event.route}</td>
+                          <td>{formatDateTime(event.openedAt)}</td>
+                          <td>{event.closedAt ? formatDateTime(event.closedAt) : '-'}</td>
+                          <td className="duration-cell">{formatDuration(event.durationMs)}</td>
+                          <td>
+                            <span className={`status-badge ${event.closedAt === null ? 'open' : 'closed'}`}>
+                              {event.closedAt === null ? 'OPEN' : 'CLOSED'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="no-data">
+                  No route open events recorded yet. The dashboard tracks route status changes in real-time.
+                </div>
+              )}
+              <p className="history-note">
+                Route history is tracked locally in your browser and persists across sessions.
+                Routes open when a token depegs by more than {((10000 - routeStatus.depegThreshold) / 100).toFixed(2)}% relative to another token.
+              </p>
+            </section>
+          </>
+        )}
 
         <footer className="footer">
           <p>

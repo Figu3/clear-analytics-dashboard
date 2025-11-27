@@ -8,6 +8,35 @@ export interface OraclePrice {
   symbol: string;
 }
 
+export interface RouteStatus {
+  fromSymbol: string;
+  toSymbol: string;
+  fromAsset: string;
+  toAsset: string;
+  isOpen: boolean;
+  depegPercentage: number; // How much the from token is depegged relative to the to token
+  threshold: number; // The depeg threshold (e.g., 0.05%)
+}
+
+export interface RouteOpenEvent {
+  id: string;
+  route: string; // e.g., "GHO -> USDC"
+  openedAt: number; // timestamp
+  closedAt: number | null; // null if still open
+  durationMs: number | null; // null if still open
+}
+
+export interface RouteStatusMetrics {
+  routes: RouteStatus[];
+  depegThreshold: number; // from contract (e.g., 9995 = 0.05%)
+  anyRouteOpen: boolean;
+  // Historical metrics (from localStorage)
+  routeOpenEvents: RouteOpenEvent[];
+  totalTimesOpened: number;
+  averageOpenDurationMs: number | null;
+  totalOpenDurationMs: number;
+}
+
 export interface ReserveBalance {
   symbol: string;
   balance: string;
@@ -318,6 +347,150 @@ class DataService {
       console.error('Error fetching oracle prices:', error);
       return [];
     }
+  }
+
+  async getDepegThreshold(): Promise<number> {
+    try {
+      const response = await fetch('https://api-arb-sepolia-clear.trevee.xyz/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query { clearStatuses { swapDepegTreshold } }`
+        })
+      });
+      const data = await response.json();
+      return parseInt(data.data?.clearStatuses?.[0]?.swapDepegTreshold || '9995');
+    } catch (error) {
+      console.error('Error fetching depeg threshold:', error);
+      return 9995; // Default
+    }
+  }
+
+  calculateRouteStatus(oraclePrices: OraclePrice[], depegThreshold: number): RouteStatus[] {
+    const routes: RouteStatus[] = [];
+    const thresholdPercent = (10000 - depegThreshold) / 100; // e.g., 9995 -> 0.05%
+
+    // Check all possible routes between tokens
+    for (let i = 0; i < oraclePrices.length; i++) {
+      for (let j = 0; j < oraclePrices.length; j++) {
+        if (i === j) continue;
+
+        const fromToken = oraclePrices[i];
+        const toToken = oraclePrices[j];
+
+        // Route is open if: fromPrice <= toPrice * threshold / 10000
+        // This means the from token is depegged by more than the threshold
+        const maxFromPrice = (toToken.price * depegThreshold) / 10000;
+        const isOpen = fromToken.price <= maxFromPrice;
+
+        // Calculate depeg percentage: how much lower fromPrice is compared to toPrice
+        const depegPercentage = ((toToken.price - fromToken.price) / toToken.price) * 100;
+
+        routes.push({
+          fromSymbol: fromToken.symbol,
+          toSymbol: toToken.symbol,
+          fromAsset: fromToken.asset,
+          toAsset: toToken.asset,
+          isOpen,
+          depegPercentage,
+          threshold: thresholdPercent,
+        });
+      }
+    }
+
+    return routes;
+  }
+
+  async getRouteStatusMetrics(oraclePrices: OraclePrice[]): Promise<RouteStatusMetrics> {
+    const depegThreshold = await this.getDepegThreshold();
+    const routes = this.calculateRouteStatus(oraclePrices, depegThreshold);
+    const anyRouteOpen = routes.some(r => r.isOpen);
+
+    // Load historical events from localStorage
+    const storedEvents = this.loadRouteEvents();
+
+    // Update events based on current status
+    const now = Date.now();
+    const updatedEvents = this.updateRouteEvents(storedEvents, routes, now);
+
+    // Save updated events
+    this.saveRouteEvents(updatedEvents);
+
+    // Calculate statistics
+    const closedEvents = updatedEvents.filter(e => e.closedAt !== null);
+    const totalTimesOpened = updatedEvents.length;
+    const totalOpenDurationMs = closedEvents.reduce((sum, e) => sum + (e.durationMs || 0), 0);
+    const averageOpenDurationMs = closedEvents.length > 0
+      ? totalOpenDurationMs / closedEvents.length
+      : null;
+
+    return {
+      routes,
+      depegThreshold,
+      anyRouteOpen,
+      routeOpenEvents: updatedEvents,
+      totalTimesOpened,
+      averageOpenDurationMs,
+      totalOpenDurationMs,
+    };
+  }
+
+  private loadRouteEvents(): RouteOpenEvent[] {
+    try {
+      const stored = localStorage.getItem('clear_route_events');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveRouteEvents(events: RouteOpenEvent[]): void {
+    try {
+      localStorage.setItem('clear_route_events', JSON.stringify(events));
+    } catch (error) {
+      console.error('Error saving route events:', error);
+    }
+  }
+
+  private updateRouteEvents(
+    existingEvents: RouteOpenEvent[],
+    currentRoutes: RouteStatus[],
+    now: number
+  ): RouteOpenEvent[] {
+    const events = [...existingEvents];
+
+    for (const route of currentRoutes) {
+      const routeName = `${route.fromSymbol} -> ${route.toSymbol}`;
+
+      // Find the most recent event for this route
+      const lastEvent = events
+        .filter(e => e.route === routeName)
+        .sort((a, b) => b.openedAt - a.openedAt)[0];
+
+      if (route.isOpen) {
+        // Route is currently open
+        if (!lastEvent || lastEvent.closedAt !== null) {
+          // No previous event or last event was closed - create new open event
+          events.push({
+            id: `${routeName}-${now}`,
+            route: routeName,
+            openedAt: now,
+            closedAt: null,
+            durationMs: null,
+          });
+        }
+        // If last event is still open, do nothing (it's ongoing)
+      } else {
+        // Route is currently closed
+        if (lastEvent && lastEvent.closedAt === null) {
+          // Close the open event
+          lastEvent.closedAt = now;
+          lastEvent.durationMs = now - lastEvent.openedAt;
+        }
+      }
+    }
+
+    return events;
   }
 
   async getVaultTokenAllocations(oraclePrices: OraclePrice[]): Promise<{ allocations: VaultTokenAllocation[]; totalAssetsUSD: string }> {
