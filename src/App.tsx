@@ -309,7 +309,7 @@ function App() {
             <div className="address-list">
               <AddressRow label="Factory" address="0x514Ed620137c62484F426128317e5AA86edd7475" />
               <AddressRow label="Swap" address="0x5144E17c86d6e1B25F61a036024a65bC4775E37e" />
-              <AddressRow label="Vault" address="0x343EfFc28C20821a65115a17032aCA7CA43F6102" />
+              <AddressRow label="Vault" address="0xCaC0fa2818AeD2EeA8B9f52CA411E6eC3e13d822" />
               <AddressRow label="IOU" address="0x3bA352df84613877fc30AcC0303d1b5C9CF7Da4d" />
               <AddressRow label="Oracle" address="0x716A0b9E20Bd10b82840733De144fAb69bbAEda3" />
               <AddressRow label="GHO" address="0x69cAC783c212Bfae06E3c1A9a2E6Ae6b17bA0614" />

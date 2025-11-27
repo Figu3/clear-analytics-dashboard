@@ -2,7 +2,8 @@
 
 export const CONTRACTS = {
   ClearFactory: '0x514Ed620137c62484F426128317e5AA86edd7475',
-  ClearVault: '0x343EfFc28C20821a65115a17032aCA7CA43F6102',
+  ClearVault: '0xCaC0fa2818AeD2EeA8B9f52CA411E6eC3e13d822', // Deployed vault instance with deposits
+  ClearVaultImplementation: '0x343EfFc28C20821a65115a17032aCA7CA43F6102', // Vault implementation
   ClearIOU: '0x3bA352df84613877fc30AcC0303d1b5C9CF7Da4d',
   ClearSwap: '0x5144E17c86d6e1B25F61a036024a65bC4775E37e',
   ClearOracle: '0x716A0b9E20Bd10b82840733De144fAb69bbAEda3',
