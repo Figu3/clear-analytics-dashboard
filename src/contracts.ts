@@ -1,15 +1,13 @@
 // Clear Protocol Contract Configuration - Arbitrum Sepolia
 
 export const CONTRACTS = {
-  ClearFactory: '0x6f73CCe0210Fe9e1B8c650739C06E8a400d09E68',
-  ClearVault: '0x1CfB48224Ef579A11B98126151584EEcB0E47960', // Deployed vault instance
-  ClearVaultImplementation: '0xD842772F0a6cB1276628f2C810f41B2893B717C4', // Implementation contract
-  ClearIOU: '0xb37d72c8022ac57c95b90ab3fbb21f9146fe6810', // Deployed IOU token instance (was implementation)
-  ClearIOUImplementation: '0x54E2F1eF78F386c7CBC5E353A4d49F353CBFca23', // Implementation contract
-  ClearSwap: '0x5B69f9D067077c3FBb22Bd732d2c34A9731fC162',
-  ClearOracle: '0x50c2584E2f32533e9307df9eE0Beb229fC20f517',
-  ClearAccessManager: '0x3C2Fd22Ad486293e1F59dA6e42B28EC8DC1D63C7',
-  ClearAaveV3Adapter: '0xc5f7791Fe50992fa0E42695593F858c395773E63',
+  ClearFactory: '0x514Ed620137c62484F426128317e5AA86edd7475',
+  ClearVault: '0x343EfFc28C20821a65115a17032aCA7CA43F6102',
+  ClearIOU: '0x3bA352df84613877fc30AcC0303d1b5C9CF7Da4d',
+  ClearSwap: '0x5144E17c86d6e1B25F61a036024a65bC4775E37e',
+  ClearOracle: '0x716A0b9E20Bd10b82840733De144fAb69bbAEda3',
+  ClearAccessManager: '0x2101BC8FaF1D12bEdc3a73e73BE418a8c3b18E1B',
+  // Tokens (unchanged)
   MockGHO: '0x69cAC783c212Bfae06E3c1A9a2E6Ae6b17bA0614',
 } as const;
 

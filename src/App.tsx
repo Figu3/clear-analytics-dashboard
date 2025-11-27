@@ -307,10 +307,11 @@ function App() {
           <div className="info-card">
             <h3>Contract Addresses</h3>
             <div className="address-list">
-              <AddressRow label="Factory" address="0x6f73CCe0210Fe9e1B8c650739C06E8a400d09E68" />
-              <AddressRow label="Swap" address="0x5B69f9D067077c3FBb22Bd732d2c34A9731fC162" />
-              <AddressRow label="Vault" address="0x1CfB48224Ef579A11B98126151584EEcB0E47960" />
-              <AddressRow label="IOU" address="0xb37d72c8022ac57c95b90ab3fbb21f9146fe6810" />
+              <AddressRow label="Factory" address="0x514Ed620137c62484F426128317e5AA86edd7475" />
+              <AddressRow label="Swap" address="0x5144E17c86d6e1B25F61a036024a65bC4775E37e" />
+              <AddressRow label="Vault" address="0x343EfFc28C20821a65115a17032aCA7CA43F6102" />
+              <AddressRow label="IOU" address="0x3bA352df84613877fc30AcC0303d1b5C9CF7Da4d" />
+              <AddressRow label="Oracle" address="0x716A0b9E20Bd10b82840733De144fAb69bbAEda3" />
               <AddressRow label="GHO" address="0x69cAC783c212Bfae06E3c1A9a2E6Ae6b17bA0614" />
               <AddressRow label="USDC" address="0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d" />
             </div>
