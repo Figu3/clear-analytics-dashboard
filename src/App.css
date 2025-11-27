@@ -321,6 +321,119 @@
   box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4);
 }
 
+/* Liquidity Allocation Table */
+.allocation-section {
+  margin-bottom: 3rem;
+}
+
+.allocation-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #333;
+}
+
+.allocation-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.allocation-subtitle {
+  margin: 0 0 1.5rem 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.allocation-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.allocation-table th {
+  text-align: left;
+  padding: 1rem 0.75rem;
+  border-bottom: 2px solid #00ff88;
+  color: #888;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.allocation-table td {
+  padding: 1rem 0.75rem;
+  border-bottom: 1px solid #333;
+}
+
+.allocation-table tbody tr:hover {
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.allocation-table tfoot td {
+  padding: 1rem 0.75rem;
+  border-top: 2px solid #333;
+  border-bottom: none;
+}
+
+.token-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.token-symbol {
+  font-weight: 700;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.token-name {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.balance-cell {
+  font-family: 'Monaco', 'Courier New', monospace;
+  color: #fff;
+}
+
+.usd-cell {
+  font-family: 'Monaco', 'Courier New', monospace;
+  color: #00ff88;
+  font-weight: 600;
+}
+
+.location-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.location-badge.vault {
+  background: #2a5a2a;
+  color: #00ff88;
+  border: 1px solid #00ff88;
+}
+
+.location-badge.aave {
+  background: #5a2a5a;
+  color: #ff88ff;
+  border: 1px solid #ff88ff;
+}
+
+.adapter-cell code {
+  color: #00ccff;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.no-adapter {
+  color: #666;
+}
+
 @media (max-width: 768px) {
   .charts-section,
   .info-section {
@@ -333,5 +446,14 @@
 
   .metric-value {
     font-size: 1.5rem;
+  }
+
+  .allocation-table {
+    font-size: 0.85rem;
+  }
+
+  .allocation-table th,
+  .allocation-table td {
+    padding: 0.75rem 0.5rem;
   }
 }

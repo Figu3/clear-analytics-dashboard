@@ -21,6 +21,17 @@ export interface TVLDataPoint {
   total: number;
 }
 
+export interface VaultTokenAllocation {
+  symbol: string;
+  name: string;
+  address: string;
+  balance: string;
+  balanceUSD: string;
+  decimals: number;
+  adapter: string;
+  adapterName: string;
+}
+
 export interface ProtocolMetrics {
   // Primary Metrics (all in USD)
   totalSwapVolumeUSD: string;
@@ -31,6 +42,7 @@ export interface ProtocolMetrics {
   // Additional Metrics
   totalValueLockedUSD: string;
   reserveBalances: ReserveBalance[];
+  tokenAllocations: VaultTokenAllocation[];
   numberOfVaults: number;
   numberOfRebalances: number;
   activeUsers: number;
@@ -308,6 +320,63 @@ class DataService {
     }
   }
 
+  async getVaultTokenAllocations(oraclePrices: OraclePrice[]): Promise<{ allocations: VaultTokenAllocation[]; totalAssetsUSD: string }> {
+    try {
+      const response = await fetch('https://api-arb-sepolia-clear.trevee.xyz/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query { clearVaults { totalAssets tokens { address name symbol decimals balance adapter } } }`
+        })
+      });
+      const data = await response.json();
+
+      const vault = data.data?.clearVaults?.[0];
+      if (!vault) return { allocations: [], totalAssetsUSD: '0' };
+
+      const allocations: VaultTokenAllocation[] = vault.tokens.map((token: {
+        address: string;
+        name: string;
+        symbol: string;
+        decimals: string;
+        balance: string;
+        adapter: string;
+      }) => {
+        const decimals = parseInt(token.decimals);
+        const balance = parseFloat(token.balance) / Math.pow(10, decimals);
+
+        // Find oracle price for this token
+        const oracle = oraclePrices.find(o => o.symbol === token.symbol);
+        const price = oracle?.price || 1;
+
+        // Determine adapter name
+        let adapterName = 'Vault (Direct)';
+        if (token.adapter !== '0x0000000000000000000000000000000000000000') {
+          adapterName = 'Aave V3 Adapter';
+        }
+
+        return {
+          symbol: token.symbol,
+          name: token.name,
+          address: token.address,
+          balance: balance.toFixed(decimals === 6 ? 2 : 4),
+          balanceUSD: (balance * price).toFixed(2),
+          decimals,
+          adapter: token.adapter,
+          adapterName,
+        };
+      });
+
+      // Calculate total from allocations
+      const totalUSD = allocations.reduce((sum, a) => sum + parseFloat(a.balanceUSD), 0);
+
+      return { allocations, totalAssetsUSD: totalUSD.toFixed(2) };
+    } catch (error) {
+      console.error('Error fetching vault token allocations:', error);
+      return { allocations: [], totalAssetsUSD: '0' };
+    }
+  }
+
   async getAllMetrics(): Promise<ProtocolMetrics> {
     const latestBlock = await this.getLatestBlock();
     const fromBlock = START_BLOCK;
@@ -320,7 +389,6 @@ class DataService {
       vaultCount,
       depositData,
       iouSupply,
-      vaultTotalAssets,
       ethPrice,
       oraclePrices,
       rebalanceCount,
@@ -331,14 +399,16 @@ class DataService {
       this.getVaultCreationEvents(fromBlock, latestBlock),
       this.getDepositEvents(fromBlock, latestBlock),
       this.getIOUTotalSupply(),
-      this.getVaultTotalAssets(),
       this.getEthPrice(),
       this.getOraclePrices(),
       this.getRebalanceCount(),
     ]);
 
-    // Fetch reserve balances (needs oracle prices for USD conversion)
-    const reserveBalances = await this.getReserveBalances(oraclePrices);
+    // Fetch reserve balances and token allocations (needs oracle prices for USD conversion)
+    const [reserveBalances, tokenAllocationData] = await Promise.all([
+      this.getReserveBalances(oraclePrices),
+      this.getVaultTokenAllocations(oraclePrices),
+    ]);
 
     // Calculate total swap volume
     let totalSwapVolume = 0n;
@@ -413,11 +483,8 @@ class DataService {
     const totalSwapVolumeEth = parseFloat(ethers.formatEther(totalSwapVolume));
     const protocolFeesEth = parseFloat(ethers.formatEther(totalIOUFromSwaps / 100n));
 
-    // Calculate TVL from vault totalAssets (in GHO, 18 decimals)
-    const ghoOracle = oraclePrices.find(o => o.symbol === 'GHO');
-    const ghoPrice = ghoOracle?.price || 1;
-    const totalAssetsFormatted = parseFloat(ethers.formatEther(vaultTotalAssets));
-    const totalValueLockedUSD = (totalAssetsFormatted * ghoPrice).toFixed(2);
+    // Use TVL from GraphQL which has accurate per-token balances
+    const totalValueLockedUSD = tokenAllocationData.totalAssetsUSD;
 
     return {
       totalSwapVolumeUSD: (totalSwapVolumeEth * ethPrice).toFixed(2),
@@ -426,6 +493,7 @@ class DataService {
       rebalanceVolumeUSD: '0', // Will need to track rebalance tx separately
       totalValueLockedUSD,
       reserveBalances,
+      tokenAllocations: tokenAllocationData.allocations,
       numberOfVaults: vaultCount,
       numberOfRebalances: rebalanceCount,
       activeUsers: allUsers.size,

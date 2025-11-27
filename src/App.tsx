@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { dataService } from './dataService';
-import type { ProtocolMetrics } from './dataService';
+import type { ProtocolMetrics, VaultTokenAllocation } from './dataService';
 import {
   LineChart,
   Line,
@@ -165,14 +165,6 @@ function App() {
             <div className="metric-unit">USD</div>
           </div>
 
-          {metrics.reserveBalances.map((reserve) => (
-            <div key={reserve.symbol} className="metric-card secondary">
-              <h3>{reserve.symbol} Reserve</h3>
-              <div className="metric-value">{formatNumber(reserve.balance)}</div>
-              <div className="metric-unit">{formatUSD(reserve.balanceUSD)}</div>
-            </div>
-          ))}
-
           <div className="metric-card secondary">
             <h3>IOU Outstanding</h3>
             <div className="metric-value">{formatNumber(metrics.iouOutstandingSupply)}</div>
@@ -299,6 +291,59 @@ function App() {
               </ResponsiveContainer>
             ) : (
               <div className="no-data">No TVL data yet</div>
+            )}
+          </div>
+        </section>
+
+        <section className="allocation-section">
+          <div className="allocation-card">
+            <h3>Liquidity Allocation</h3>
+            <p className="allocation-subtitle">Where vault assets are invested</p>
+            {metrics.tokenAllocations.length > 0 ? (
+              <table className="allocation-table">
+                <thead>
+                  <tr>
+                    <th>Token</th>
+                    <th>Balance</th>
+                    <th>Value (USD)</th>
+                    <th>Location</th>
+                    <th>Adapter</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.tokenAllocations.map((allocation: VaultTokenAllocation) => (
+                    <tr key={allocation.address}>
+                      <td className="token-cell">
+                        <span className="token-symbol">{allocation.symbol}</span>
+                        <span className="token-name">{allocation.name}</span>
+                      </td>
+                      <td className="balance-cell">{allocation.balance}</td>
+                      <td className="usd-cell">${allocation.balanceUSD}</td>
+                      <td className="location-cell">
+                        <span className={`location-badge ${allocation.adapterName.includes('Aave') ? 'aave' : 'vault'}`}>
+                          {allocation.adapterName}
+                        </span>
+                      </td>
+                      <td className="adapter-cell">
+                        {allocation.adapter !== '0x0000000000000000000000000000000000000000' ? (
+                          <code>{allocation.adapter.slice(0, 6)}...{allocation.adapter.slice(-4)}</code>
+                        ) : (
+                          <span className="no-adapter">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={2}><strong>Total TVL</strong></td>
+                    <td className="usd-cell"><strong>${metrics.totalValueLockedUSD}</strong></td>
+                    <td colSpan={2}></td>
+                  </tr>
+                </tfoot>
+              </table>
+            ) : (
+              <div className="no-data">No allocation data available</div>
             )}
           </div>
         </section>
